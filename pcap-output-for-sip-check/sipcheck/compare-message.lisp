@@ -91,7 +91,7 @@
 		      for index in same-header-indexes collect
 			(loop for m in *ps-methods*
 			   for n in *ps-q-methods* collect
-			     (list index (funcall n (funcall m x a-line))))))))
+			     (list index (funcall n (funcall m x a-line nil))))))))
 	     (car (own-min differences)))))))
 
 ;;o(setf *temp2* (ref-shared-data *temp* 384))
