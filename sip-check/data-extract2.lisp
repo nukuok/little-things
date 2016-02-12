@@ -55,7 +55,7 @@
        (let ((v (dom:get-elements-by-tag-name x "v"))
 	     (r (dom:get-attribute x "r")))
 	 (when (and (> (length v) 0)
-		    (search (princ-to-string prefix) r))
+		    (search (format nil "~A" prefix) r))
 	   (list (list r (dom:node-value (aref (dom:child-nodes (aref v 0)) 0))))))))
 
 ;;string process check
@@ -148,3 +148,6 @@
 		 (format out "~{~A~}" right-messages))))))))
 	       
 
+(save-scenario-files "xlsx/" (loop for x from 17 to 19 collect x))
+(save-scenario-files "xlsx/" (loop for x from 2 to 15 collect x))
+(save-scenario-files "xlsx/" '(16) #\E #\H)
