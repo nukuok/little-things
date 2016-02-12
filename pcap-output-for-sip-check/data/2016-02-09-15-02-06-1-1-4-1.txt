@@ -1,0 +1,111 @@
+>>> LEFT MESSAGES
+>>> Data Reference
+F2：INVITE
+>>> Data Reference
+INVITE sip:+81322222222;npdi;rn=0399999999@[NTTドメイン名];user=phone SIP/2.0
+Via: SIP/2.0/TCP [SBCのNTT側CプレーンIPアドレス]:5060;branch=z9hG4bKxxx1b
+From: <sip:+819011111111@[A社ドメイン名];user=phone>;tag=xxxxxxbcd
+To: <sip:+81322222222@[NTTドメイン名];user=phone>
+Contact: <sip:[SBCのNTT側CプレーンIPアドレス]:5060;transport=tcp>
+Call-ID: xxxxxxxxxx234@[SBCのNTT側CプレーンIPアドレス]
+CSeq: 1 INVITE
+Max-Forwards: xx
+Allow: INVITE,ACK,PRACK,BYE,CANCEL,UPDATE
+Supported: 100rel,timer
+Session-Expires: 300;refresher=uac
+Min-SE: 300
+Content-Type: application/sdp
+Content-Length: xx
+P-Asserted-Identity: "09011111111"<tel:+819011111111;cpc=ordinary>,<sip:+819011111111@[A社ドメイン名];user=phone;cpc=ordinary>
+Privacy: none
+
+v=0
+o=- x2x0 x2x0 IN IPx [SBCのNTT側UプレーンIPアドレス]
+s=-
+c=IN IPx [SBCのNTT側UプレーンIPアドレス]
+t=0 0
+m=audio [SBCのポート番号] RTP/AVP 0 96 97 98 99
+a=sendrecv
+a=rtpmap:0 PCMU/8000
+a=rtpmap:96 AMR-WB/16000/1
+a=fmtp:96 mode-set=2
+a=rtpmap:97 AMR/8000/1
+a=fmtp:97 mode-set=7
+a=rtpmap:98 telephone-event/16000
+a=fmtp:98 0-15
+a=rtpmap:99 telephone-event/8000
+a=fmtp:99 0-15
+>>> Data Reference
+F5:100 Trying
+>>> Data Reference
+F8：180 Ringing
+>>> Data Reference
+F11：PRACK
+>>> Data Reference
+F14：200 OK（PRACK）
+>>> Data Reference
+F17：200 OK（INVITE）
+>>> Data Reference
+F20：ACK
+>>> Data Reference
+F23：BYE
+>>> Data Reference
+F26：200 OK
+>>> RIGHT MESSAGES
+>>> Data Reference
+F1：INVITE
+>>> Data Reference
+INVITE sip:+81322222222;npdi;rn=0399999999@[NTTドメイン名];user=phone SIP/2.0
+Via: SIP/2.0/TCP [A社-GWのNTT側CプレーンIPアドレス]:5060;branch=z9hG4bKxxx1d
+From: <sip:+819011111111@[A社ドメイン名];user=phone>;tag=xxxxxxcde
+To: <sip:+81322222222@[NTTドメイン名];user=phone>
+Contact: <sip:[A社-GWのNTT側CプレーンIPアドレス]:5060;transport=tcp>
+Call-ID: xxxxxxxxxx345@[A社-GWのNTT側CプレーンIPアドレス]
+CSeq: 1 INVITE
+Max-Forwards: xx
+Allow: INVITE,ACK,PRACK,BYE,CANCEL,UPDATE
+Supported: 100rel,timer,precondition
+Session-Expires: 300;refresher=uac
+Min-SE: 300
+P-Early-Media: supported
+Content-Type: application/sdp
+Content-Length: xx
+P-Asserted-Identity: "09011111111"<tel:+819011111111;cpc=ordinary>,<sip:+819011111111;cpc=ordinary@[A社ドメイン名];user=phone>
+Privacy: none
+
+v=0
+o=- x1x0 x1x0 IN IPx [A社-GWのNTT側UプレーンIPアドレス]
+s=QC VOIP
+c=IN IPx [A社-GWのNTT側UプレーンIPアドレス]
+t=0 0
+m=audio [A社-GWのポート番号] RTP/AVP 0 96 97 98 99
+a=curr:qos local sendrecv
+a=curr:qos remote none
+a=des:qos mandatory local sendrecv
+a=des:qos optional remote sendrecv
+a=sendrecv
+a=rtpmap:0 PCMU/8000
+a=rtpmap:96 AMR-WB/16000/1
+a=fmtp:96 mode-set=2
+a=rtpmap:97 AMR/8000/1
+a=fmtp:97 mode-set=7
+a=rtpmap:98 telephone-event/16000
+a=fmtp:98 0-15
+a=rtpmap:99 telephone-event/8000
+a=fmtp:99 0-15
+>>> Data Reference
+F4：100 Trying
+>>> Data Reference
+F9：180 Ringing
+>>> Data Reference
+F10：PRACK
+>>> Data Reference
+F15：200 OK（PRACK）
+>>> Data Reference
+F18：200 OK（INVITE）
+>>> Data Reference
+F19：ACK
+>>> Data Reference
+F22：BYE
+>>> Data Reference
+F25：200OK
