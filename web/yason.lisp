@@ -1,5 +1,7 @@
 (defvar *json-string* "[{\"foo\":1,\"bar\":[7,8,9]},2,3,4,[5,6,7],true,null]")
 
+(ql:quickload :yason)
+
 (let* ((result (yason:parse *json-string*)))
            (print result)
            (print (alexandria:hash-table-plist (first result))))
