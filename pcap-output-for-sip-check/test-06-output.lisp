@@ -1,5 +1,15 @@
-(load "processpcap/module.lisp")
-(load "sipcheck/module.lisp")
+;;(load "processpcap/module.lisp")
+;;(load "sipcheck/module.lisp")
+
+(load "sipcheck/data-extract2.lisp")
+(load "sipcheck/check.lisp")
+(load "sipcheck/compare-message.lisp")
+
+(load "processpcap/tools.lisp")
+(load "processpcap/test-05-udp.lisp")
+(load "processpcap/output-to-var.lisp")
+(load "processpcap/rtp.lisp")
+
 
 (load "ip-header.lisp")
 

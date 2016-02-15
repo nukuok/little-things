@@ -81,9 +81,11 @@
   (if (= (length line) 0)
       (reverse (cons (coerce (reverse charlist) 'string) result))
       (let ((currentchar (aref line 0)))
-	(cond ((char-equal currentchar #\ )
+	(cond ((char-equal currentchar #\space)
 	       (process-a-line (subseq line 1) nil
-			       (cons (coerce (reverse charlist) 'string) result)))
+			       (cons #\space
+				     (cons (coerce (reverse charlist) 'string)
+					   result))))
 	      ((or (char-equal currentchar #\@) (char-equal currentchar  #\:)
 		   (char-equal currentchar  #\,)
 		   (char-equal currentchar  #\;) (char-equal currentchar #\=))

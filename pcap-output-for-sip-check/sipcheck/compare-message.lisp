@@ -118,7 +118,7 @@
 	   (if ii-position
 	       (push (car (nth ii-position diff-evaluated)) eva-result)
 	       (push (nth ii eva-mb) eva-result))))
-    (list eva-result base-result)))
+    (list (reverse eva-result) (reverse base-result))))
 
 
 (defun compare-parted-message-blocks (eva-mb base-mb &optional (outstream t))
@@ -129,8 +129,6 @@
       (print matched-lines)
       (let ((diff-evaluated (diff-output base-mb matched-lines matched-indexes outstream)))
 	(diff-output-complete eva-mb base-mb matched-indexes diff-evaluated)))))
-
-
 
 ;;(compare-parted-message-blocks
 ;; (car (process-a-message (make-string-input-stream *temp2*)))
@@ -155,14 +153,18 @@
 	  (sip-m2 (compact-to-normal (car parted-message2)))
 	  (sdp-m1 (cadr parted-message1))
 	  (sdp-m2 (cadr parted-message2)))
-      (let ((masked-sip-m1 (loop for x in sip-m1 collect (mask-sentence x)))
-	    (masked-sip-m2 (loop for x in sip-m2 collect (mask-sentence x)))
-	    (masked-sdp-m1 (loop for x in sip-m1 collect (mask-sentence x)))
-	    (masked-sdp-m2 (loop for x in sip-m2 collect (mask-sentence x))))
-	(compare-message-sequence sip-m1 sip-m2 outstream)
-	(compare-message-sequence sdp-m1 sdp-m2 outstream)
-	(print (compare-parted-message-blocks sip-m1 sip-m2 outstream))
-	(print (compare-parted-message-blocks sdp-m1 sdp-m2 outstream))))))
+      (compare-message-sequence sip-m1 sip-m2 outstream)
+      (compare-message-sequence sdp-m1 sdp-m2 outstream)
+      (let ((result-message1 (compare-parted-message-blocks sip-m1 sip-m2 outstream))
+	    (result-message2 (compare-parted-message-blocks sdp-m1 sdp-m2 outstream)))
+	(values (append (car result-message1) '((#\newline)) (car result-message2))
+		(append (cadr result-message1) '((#\newline)) (cadr result-message2)))))))
+
+;;      (let ((masked-sip-m1 (loop for x in sip-m1 collect (mask-sentence x)))
+;;	    (masked-sip-m2 (loop for x in sip-m2 collect (mask-sentence x)))
+;;	    (masked-sdp-m1 (loop for x in sip-m1 collect (mask-sentence x)))
+;;	    (masked-sdp-m2 (loop for x in sip-m2 collect (mask-sentence x))))
+
 
 ;;(setpath *path3* "xl/sharedStrings.xml")
 ;;(load "data-extract2.lisp")
@@ -174,9 +176,6 @@
 ;;(compare-message (make-string-input-stream *temp2*) (make-string-input-stream *temp3*))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-
-
 
 
 
