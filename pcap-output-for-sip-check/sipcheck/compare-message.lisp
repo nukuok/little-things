@@ -7,7 +7,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; compact form
 (unintern '*compact-pairs*)
-(defvar *compact-pairs* '(("i" "Call-ID")("m" "Contact")("e" "Content-Encoding")("l" "Content-Length")("c" "Content-Type")("f" "From")("s" "Subject")("k" "Supported")("t" "To")("v" "Via")))
+(defvar *compact-pairs* '(("i:" "Call-ID:")("m:" "Contact:")("e:" "Content-Encoding:")("l:" "Content-Length:")("c:" "Content-Type:")("f:" "From:")("s:" "Subject:")("k:" "Supported:")("t:" "To:")("v:" "Via:")("x:" "Session-Expires:")))
 
 (defun compact-to-normal (parted-message)
   (labels ((compact-member (x y)
@@ -123,12 +123,12 @@
 
 (defun compare-parted-message-blocks (eva-mb base-mb &optional (outstream t))
   (let ((matched-indexes (matched-indexes-search eva-mb base-mb)))
-    (print matched-indexes)
+    ;(print matched-indexes)
     (let ((matched-lines (loop for x in matched-indexes
 			    append (when x (list (nth x eva-mb))))))
-      (print matched-lines)
+      ;(print matched-lines)
       (let ((diff-evaluated (diff-output base-mb matched-lines matched-indexes outstream)))
-	(diff-output-complete eva-mb base-mb matched-indexes diff-evaluated)))))
+	(append (diff-output-complete eva-mb base-mb matched-indexes diff-evaluated) (list matched-indexes))))))
 
 ;;(compare-parted-message-blocks
 ;; (car (process-a-message (make-string-input-stream *temp2*)))
@@ -157,8 +157,16 @@
       (compare-message-sequence sdp-m1 sdp-m2 outstream)
       (let ((result-message1 (compare-parted-message-blocks sip-m1 sip-m2 outstream))
 	    (result-message2 (compare-parted-message-blocks sdp-m1 sdp-m2 outstream)))
+	;(print "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
+	;(print sdp-m1)
+	;(print sdp-m2)
+	;(print result-message2)
+	;(print "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
 	(values (append (car result-message1) '((#\newline)) (car result-message2))
-		(append (cadr result-message1) '((#\newline)) (cadr result-message2)))))))
+		(append (cadr result-message1) '((#\newline)) (cadr result-message2))
+		(append (caddr result-message1) '((#\newline)) (caddr result-message2)))))))
+
+
 
 ;;      (let ((masked-sip-m1 (loop for x in sip-m1 collect (mask-sentence x)))
 ;;	    (masked-sip-m2 (loop for x in sip-m2 collect (mask-sentence x)))

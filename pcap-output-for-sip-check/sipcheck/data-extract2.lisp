@@ -86,7 +86,7 @@
 			       (cons #\space
 				     (cons (coerce (reverse charlist) 'string)
 					   result))))
-	      ((or (char-equal currentchar #\@) (char-equal currentchar  #\:)
+	      ((or (char-equal currentchar #\@) ;(char-equal currentchar  #\:)
 		   (char-equal currentchar  #\,)
 		   (char-equal currentchar  #\;) (char-equal currentchar #\=))
 	       (process-a-line (subseq line 1) nil
