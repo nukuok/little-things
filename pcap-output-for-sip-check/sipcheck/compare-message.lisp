@@ -94,26 +94,49 @@
 			     (list index (funcall n (funcall m x a-line nil))))))))
 	     (car (own-min differences)))))))
 
-;;o(setf *temp2* (ref-shared-data *temp* 384))
+;;(setf *temp2* (ref-shared-data *temp* 384))
 
-(defun diff-output (base-mb matched-lines &optional (outstream t))
-  (loop for a-eva-line in matched-lines
-     for a-base-line in base-mb collect
-       (cdr (assoc "sentence-diff" (compare-message-sentence a-eva-line a-base-line outstream) :test #'equal))))
+(defun filter-matched (a b)
+    (loop for x in a for y in b append
+	 (when y (list x))))
+
+(defun diff-output (base-mb matched-lines matched-indexes &optional (outstream t))
+  (let ((base-matched (filter-matched base-mb matched-indexes)))
+    (loop for a-eva-line in matched-lines
+       for a-base-line in base-matched collect
+	 (cdr (assoc "sentence-diff" (compare-message-sentence a-eva-line a-base-line outstream) :test #'equal)))))
+
+(defun diff-output-complete (eva-mb base-mb matched-indexes diff-evaluated)
+  (let (eva-result base-result)
+    (loop for x in matched-indexes for ii from 0 do
+	 (let ((matched (nth ii matched-indexes))
+	       (evaluated-item (nth ii diff-evaluated))
+	       (ii-position (position ii matched-indexes)))
+	   (if matched
+	       (push (cadr evaluated-item) base-result)
+	       (push (nth ii base-mb) base-result))
+	   (if ii-position
+	       (push (car (nth ii-position diff-evaluated)) eva-result)
+	       (push (nth ii eva-mb) eva-result))))
+    (list (reverse eva-result) (reverse base-result))))
+
 
 (defun compare-parted-message-blocks (eva-mb base-mb &optional (outstream t))
   (let ((matched-indexes (matched-indexes-search eva-mb base-mb)))
+    (print matched-indexes)
     (let ((matched-lines (loop for x in matched-indexes
 			    append (when x (list (nth x eva-mb))))))
-      (let ((diff-evaluated (diff-output base-mb matched-lines outstream)))
-	diff-evaluated))))
-	     
+      (print matched-lines)
+      (let ((diff-evaluated (diff-output base-mb matched-lines matched-indexes outstream)))
+	(diff-output-complete eva-mb base-mb matched-indexes diff-evaluated)))))
+
 ;;(compare-parted-message-blocks
 ;; (car (process-a-message (make-string-input-stream *temp2*)))
 ;; (car (process-a-message (make-string-input-stream *temp3*))) nil)
 
-;;(funcall (cadr *ps-q-methods*) (funcall (cadr *ps-methods*) '("SIP/2.0" "180" "Ringing") '("SIP/2.0" "180" "Ringing")))
+;;(compare-parted-message-blocks  (cadr (process-a-message (make-string-input-stream *temp2*))) (cadr (process-a-message (make-string-input-stream *temp3*))))
 
+;;(funcall (cadr *ps-q-methods*) (funcall (cadr *ps-methods*) '("SIP/2.0" "180" "Ringing") '("SIP/2.0" "180" "Ringing")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;
@@ -130,18 +153,29 @@
 	  (sip-m2 (compact-to-normal (car parted-message2)))
 	  (sdp-m1 (cadr parted-message1))
 	  (sdp-m2 (cadr parted-message2)))
-      (let ((masked-sip-m1 (loop for x in sip-m1 collect (mask-sentence x)))
-	    (masked-sip-m2 (loop for x in sip-m2 collect (mask-sentence x)))
-	    (masked-sdp-m1 (loop for x in sip-m1 collect (mask-sentence x)))
-	    (masked-sdp-m2 (loop for x in sip-m2 collect (mask-sentence x))))
-	(compare-message-sequence sip-m1 sip-m2 outstream)
-	(compare-message-sequence sdp-m1 sdp-m2 outstream)
-	(print (compare-parted-message-blocks sip-m1 sip-m2 outstream))
-	(print (compare-parted-message-blocks sdp-m1 sdp-m2 outstream))))))
+      (compare-message-sequence sip-m1 sip-m2 outstream)
+      (compare-message-sequence sdp-m1 sdp-m2 outstream)
+      (let ((result-message1 (compare-parted-message-blocks sip-m1 sip-m2 outstream))
+	    (result-message2 (compare-parted-message-blocks sdp-m1 sdp-m2 outstream)))
+	(values (append (car result-message1) '((#\newline)) (car result-message2))
+		(append (cadr result-message1) '((#\newline)) (cadr result-message2)))))))
+
+;;      (let ((masked-sip-m1 (loop for x in sip-m1 collect (mask-sentence x)))
+;;	    (masked-sip-m2 (loop for x in sip-m2 collect (mask-sentence x)))
+;;	    (masked-sdp-m1 (loop for x in sip-m1 collect (mask-sentence x)))
+;;	    (masked-sdp-m2 (loop for x in sip-m2 collect (mask-sentence x))))
+
 
 ;;(setpath *path3* "xl/sharedStrings.xml")
 ;;(load "data-extract2.lisp")
 ;;(get-shared-data *path3*)
 ;;(setf *temp* *)
 ;;(setf *temp2* (ref-shared-data *temp* 386))
+
+;;(load "data.lisp")
+;;(compare-message (make-string-input-stream *temp2*) (make-string-input-stream *temp3*))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
 
