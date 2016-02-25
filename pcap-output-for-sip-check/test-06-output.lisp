@@ -65,27 +65,94 @@
 	      (if (consp x)
 		  (set-color x)
 		  x)) mame)))
-  
-(defun output-2html (left-messages right-messages)
-  (let ((temp1 (car left-messages))
-	(temp2 (car right-messages)))
-    (multiple-value-bind (temp1-result temp2-result index-pairs)
-	(compare-message (make-string-input-stream temp1)
-			 (make-string-input-stream temp2))
-      (standard-page (:title "test")
-	(:div :id "\"contents\""
-	      (:table
-	       (loop
-		  for tr1 in (html-escape temp1-result)
-		  for z in index-pairs
-		  for tr2 in (html-escape temp2-result) do
+
+(defun set-nil-to-red (a-list)
+  (substitute-if  (set-color '("NIL" "red")) #'null a-list))
+
+
+
+(defun _totail (num)
+  (cond ((not (integerp num)) num)
+	((> num 99) (format nil "~d__" num))
+	((> num 9) (format nil "~d___" num))
+	(t (format nil "~d____" num))))
+
+(defun output-messages-2html (eva-messages base-messages)
+  (standard-page (:title "test")
+    (:div :id "\"contents\""
+	  (:table
+	    (loop
+	       for temp1 in eva-messages
+	       for temp2 in base-messages do
+		 (multiple-value-bind (temp1-result
+				       temp2-result
+				       matched-index-base matched-index-eva)
+		     (compare-message (make-string-input-stream temp1)
+				      (make-string-input-stream temp2))
+		   (cl-who:htm (:tr (:td "========================================")
+				    (:td "<>")
+				    (:td "<>")
+				    (:td "========================================")))
+		   (loop for x from 0 do
+			(let 
+			    ((tr1 (nth x (html-escape temp1-result)))
+			     (z (nth x matched-index-eva))
+			     (y (nth x matched-index-base))
+			     (tr2 (nth x (html-escape temp2-result))))
+			  (unless (or tr1 z y tr2) (return))
+			  (debug "output-2html-2" tr1 z y tr2)
+			  (cl-who:htm
+			   (:tr
+			    (:td (cl-who:fmt
+				  (format nil "~{~a~}" (set-color-list tr1))))
+			    (:td (cl-who:fmt ;;(format nil "~2,'_d" z)))
+				  (cond ((not (null z))
+					 (format nil "~a" (_totail z)))
+					((null tr1) "N/A")
+					(t (set-color '("NIL" "red"))))))
+			    (:td (cl-who:fmt ;;(format nil "~2,'_d" y)))
+				  (cond ((not (null y)) (format nil "~5,'_d" y))
+					((null tr2) "N/A")
+					(t (set-color '("NIL" "red"))))))
+			    (:td (cl-who:fmt
+				  (format nil "~{~a~}" (set-color-list tr2))))
+			    ))))))))))
+
+(defun output-message-2html (eva-message base-message)
+  (standard-page (:title "test")
+    (:div :id "\"contents\""
+	  (:table
+	   (multiple-value-bind (temp1-result
+				 temp2-result
+				 matched-index-base matched-index-eva)
+	       (compare-message (make-string-input-stream eva-message)
+				(make-string-input-stream base-message))
+	     (loop for x from 0 do
+		  (let 
+		      ((tr1 (nth x (html-escape temp1-result)))
+		       (z (nth x matched-index-eva))
+		       (y (nth x matched-index-base))
+		       (tr2 (nth x (html-escape temp2-result))))
+		    (unless (or tr1 z y tr2) (return))
+		    (debug "output-2html-2" tr1 z y tr2)
 		    (cl-who:htm
-		     (:tr (:td (cl-who:fmt
-				(format nil "~{~a~}" (set-color-list tr1))))
-			  (:td (cl-who:fmt (format nil "~a" z)))
-			  (:td (cl-who:fmt
-				(format nil "~{~a~}" (set-color-list tr2))))
-			  )))))))))
+		     (:tr
+		      (:td (cl-who:fmt
+			    (format nil "~{~a~}" (set-color-list tr1))))
+		      (:td (cl-who:fmt ;;(format nil "~2,'_d" z)))
+			    (cond ((not (null z))
+				   (format nil "~a" (_totail z)))
+				  ((null tr1) "N/A")
+				  (t (set-color '("NIL" "red"))))))
+		      (:td (cl-who:fmt ;;(format nil "~2,'_d" y)))
+			    (cond ((not (null y)) (format nil "~5,'_d" y))
+				  ((null tr2) "N/A")
+				  (t (set-color '("NIL" "red"))))))
+		      (:td (cl-who:fmt
+			    (format nil "~{~a~}" (set-color-list tr2))))
+		      )))))))))
+
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; html escape
@@ -114,7 +181,13 @@
     result))
 
 ;; (get-messages (processpcap::pcap-process "123.pcapng"))
+;; (get-messages-from-ppcap (pcap-process "123.pcapng"))
 ;; (setf *temp* *)
 ;; (process-a-message (make-string-input-stream (car (car *temp*))))
 
+
+;;(setf *temp2* (get-messages-from-ppcap (pcap-process "123.pcapng")))
+;;(setf *tt1* (nth 8 (car *temp2*)))
+;;(setf *tt2* (nth 11 (cadr *temp2*)))
+;;(compare-message (make-string-input-stream *tt2*) (make-string-input-stream *tt1*))
 

@@ -12,7 +12,7 @@
 	     (:style :type "text/css"
 		     "<!--
 		     table {
-		     width: 100%;
+		     #width: 100%;
 		     border-collapse: collapse;
 		     font-size: 8pt;
 		     font-family: Tahoma;

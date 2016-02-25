@@ -78,7 +78,8 @@
 (defun acc-diff-result (diff-result &optional (result nil))
   (mapcar (lambda (x) (list (caar x) (+ (cadar x) (cadadr x)))) diff-result))
 
-(defun matched-indexes-search (eva-mb base-mb)
+;;(defun matched-indexes-search (eva-mb base-mb)
+(defun matched-indexes-search (base-mb eva-mb)
   (loop for x in base-mb collect
        (let ((all-same-headers
 	      (find-all-position x eva-mb
@@ -97,8 +98,8 @@
 ;;(setf *temp2* (ref-shared-data *temp* 384))
 
 (defun filter-matched (a b)
-    (loop for x in a for y in b append
-	 (when y (list x))))
+    (loop for y in b collect
+	 (when y (nth y a))))
 
 (defun diff-output (base-mb matched-lines matched-indexes &optional (outstream t))
   (let ((base-matched (filter-matched base-mb matched-indexes)))
@@ -107,28 +108,30 @@
 	 (cdr (assoc "sentence-diff" (compare-message-sentence a-eva-line a-base-line outstream) :test #'equal)))))
 
 (defun diff-output-complete (eva-mb base-mb matched-indexes diff-evaluated)
-  (let (eva-result base-result)
-    (loop for x in matched-indexes for ii from 0 do
+  (let ((message-length (max (length eva-mb) (length base-mb)))
+	eva-result base-result)
+    (loop for ii below message-length do
 	 (let ((matched (nth ii matched-indexes))
 	       (evaluated-item (nth ii diff-evaluated))
 	       (ii-position (position ii matched-indexes)))
 	   (if matched
-	       (push (cadr evaluated-item) base-result)
-	       (push (nth ii base-mb) base-result))
+	       (push (car evaluated-item) eva-result)
+	       (push (nth ii eva-mb) eva-result))
 	   (if ii-position
-	       (push (car (nth ii-position diff-evaluated)) eva-result)
-	       (push (nth ii eva-mb) eva-result))))
+	       (push (cadr (nth ii-position diff-evaluated)) base-result)
+	       (push (nth ii base-mb) base-result))))
     (list (reverse eva-result) (reverse base-result))))
-
 
 (defun compare-parted-message-blocks (eva-mb base-mb &optional (outstream t))
   (let ((matched-indexes (matched-indexes-search eva-mb base-mb)))
-    ;(print matched-indexes)
-    (let ((matched-lines (loop for x in matched-indexes
-			    append (when x (list (nth x eva-mb))))))
-      ;(print matched-lines)
-      (let ((diff-evaluated (diff-output base-mb matched-lines matched-indexes outstream)))
-	(append (diff-output-complete eva-mb base-mb matched-indexes diff-evaluated) (list matched-indexes))))))
+    ;;(print matched-indexes)
+    (let ((matched-lines (loop for ii below (length eva-mb) collect
+			 (when (nth ii matched-indexes) (nth ii eva-mb)))))
+      (let ((diff-evaluated
+	     (diff-output base-mb matched-lines matched-indexes outstream)))
+	(append
+	 (diff-output-complete eva-mb base-mb matched-indexes diff-evaluated)
+	 (list matched-indexes))))))
 
 ;;(compare-parted-message-blocks
 ;; (car (process-a-message (make-string-input-stream *temp2*)))
@@ -146,25 +149,59 @@
 	   x
 	   "--masked--")))
 
-(defun compare-message (eva-message base-message &optional (outstream t)) ;;sip sdp block
+(defun make-matched-index-base (ll object-list)
+    (loop for x below ll collect
+	 (when (member x object-list) x)))
+
+(defun make-matched-index-base2 (base-list object-list)
+  (let ((mame1 (length base-list))
+	(mame2 (length (remove-if #'null base-list))))
+    (debug "make-index" mame1 mame2)
+    (loop for x below mame1 collect
+	 (if (< x mame2)
+	     (when (member x object-list) x)
+	     x))))
+	       ;;	       (cons nil nil))))))
+
+(defun remove-last-nils (ll)
+  (let ((mame (reverse ll))
+	(not-nil-found nil))
+    (reverse
+     (loop for x in mame append 
+	  (if not-nil-found
+	      (list x)
+	      (when x
+		(setf not-nil-found t)
+		(list x)))))))
+
+(defun compare-message (eva-message base-message &optional (outstream t));;sip sdp block
   (let ((parted-message1 (process-a-message eva-message))
 	(parted-message2 (process-a-message base-message)))
     (let ((sip-m1 (compact-to-normal (car parted-message1)))
 	  (sip-m2 (compact-to-normal (car parted-message2)))
 	  (sdp-m1 (cadr parted-message1))
 	  (sdp-m2 (cadr parted-message2)))
-      (compare-message-sequence sip-m1 sip-m2 outstream)
-      (compare-message-sequence sdp-m1 sdp-m2 outstream)
+      ;; not related to sequence
+      ;;(compare-message-sequence sip-m1 sip-m2 t)
+      ;;(compare-message-sequence sdp-m1 sdp-m2 t)
       (let ((result-message1 (compare-parted-message-blocks sip-m1 sip-m2 outstream))
 	    (result-message2 (compare-parted-message-blocks sdp-m1 sdp-m2 outstream)))
-	;(print "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
-	;(print sdp-m1)
-	;(print sdp-m2)
-	;(print result-message2)
-	;(print "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
-	(values (append (car result-message1) '((#\newline)) (car result-message2))
-		(append (cadr result-message1) '((#\newline)) (cadr result-message2))
-		(append (caddr result-message1) '((#\newline)) (caddr result-message2)))))))
+	(let
+	    ((fitted-indexes1
+	      (make-matched-index-base2
+				 (car result-message1) (caddr result-message1)))
+	     (fitted-indexes2
+	      (make-matched-index-base2
+				 (car result-message2) (caddr result-message2))))
+	  (debug "compare-message" fitted-indexes1 fitted-indexes2)
+	  (values (append (car result-message1)
+			  '(()) (car result-message2))
+		  (append (cadr result-message1)
+			  '(()) (cadr result-message2))
+		  (append fitted-indexes1
+			  '("Sp") fitted-indexes2)
+		  (append (caddr result-message1)
+			  '("Sp") (caddr result-message2))))))))
 
 
 
@@ -184,6 +221,4 @@
 ;;(compare-message (make-string-input-stream *temp2*) (make-string-input-stream *temp3*))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-
 
