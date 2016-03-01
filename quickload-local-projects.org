@@ -1,0 +1,109 @@
+* check where to put source files by > ql::*quickload-home*
+  #P"C:/Users/Administrator/quicklisp/"
+
+* folder file template
+#+BEGIN_SRC text
+ ./
+ src/
+    my-special-lib.lisp
+ t/
+  my-special-lib-test.lisp
+ my-special-lib.asd
+ my-special-lib-test.asd
+ package.lisp
+#+END_SRC
+
+* asd template 1 
+#+BEGIN_SRC text
+my-special-lib.asd
+
+(in-package :cl-user)
+(defpackage my-special-lib-asd
+  (:use :cl :asdf))
+(in-package :my-special-lib-asd)
+
+(defsystem my-special-lib
+  :description "sample library"
+  :version "0.1"
+  :author "tamura shingo"
+  :license "GPL"
+  :components ((:file "package")
+               (:module "src"
+                :components
+                ((:file "my-special-lib"))))
+  :in-order-to ((test-op (load-op my-special-lib-test))))
+#+END_SRC
+
+* asd template2 
+#+BEGIN_SRC text
+my-special-lib-test.asd
+
+(in-package :cl-user)
+(defpackage my-special-lib-test-asd
+  (:use :cl :asdf))
+(in-package :my-special-lib-test-asd)
+
+(defsystem my-special-lib-test
+  :description "test for my-special-lib"
+  :depends-on (:my-special-lib
+               :cl-test-more)
+  :components ((:module "t"
+                :components
+                ((:file "my-special-lib-test"))))
+  :perform (load-op :after (op c) (asdf:clear-system c)))
+#+END_SRC
+
+
+* package.lisp template
+#+BEGIN_SRC text
+(in-package :cl-user)
+
+(defpackage :my-special-lib
+  (:use :cl)
+  ; src/my-special-lib.lisp
+  (:export :greeting))
+#+END_SRC
+
+
+* src/my-special-lib.lisp template 
+#+BEGIN_SRC text
+(in-package #:my-special-lib)
+
+(defun greeting ()
+  "hello world")
+#+END_SRC
+
+
+* t/my-special-lib-test.lisp template
+#+BEGIN_SRC text
+(in-package :cl-user)
+(defpackage my-special-lib-test
+  (:use :cl
+        :cl-test-more
+        :my-special-lib))
+(in-package #:my-special-lib-test)
+
+(plan 1)
+
+(ok (string= (my-special-lib:greeting) "hello world"))
+
+(finalize)
+#+END_SRC
+
+
+* register in local
+ローカルプロジェクトの登録を行います。
+
+CL-USER> (ql:register-local-projects)
+NIL
+
+
+* result
+- local-projectsディレクトリ下にsyystem-index.txtと言うファイルが作成されます。
+  中身はこんな感じです。
+
+  $ cat system-index.txt 
+  my-special-lib/my-special-lib.asd
+  my-special-lib/my-special-lib-test.asd
+
+
