@@ -4,6 +4,7 @@
 (ql:quickload :cffi)
 (pushnew "." cffi:*FOREIGN-LIBRARY-DIRECTORIES*)
 (ql:quickload :hunchentoot)
+(ql:quickload :smackjack)
 
 ;;;;
 (ql:quickload :processpcap) ;; heyhey

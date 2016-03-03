@@ -1,16 +1,26 @@
 (ql:quickload :cl-who)
+(ql:quickload :processpcap)
+(ql:quickload :sipcheck)
+(ql:quickload :custom-tools)
+
+(in-package :cl)
+(defpackage :sbc-tools
+  (:use :cl :processpcap :sipcheck :cl-who :custom-tools))
+(in-package :sbc-tools)
+
+
 ;;(load "processpcap/module.lisp")
 ;;(load "sipcheck/module.lisp")
 
-(load "sipcheck/data-extract2.lisp")
-(load "sipcheck/check.lisp")
-(load "sipcheck/compare-message.lisp")
-(load "sipcheck/data.lisp")
+;;(load "sipcheck/data-extract2.lisp")
+;;(load "sipcheck/check.lisp")
+;;(load "sipcheck/compare-message.lisp")
+;;(load "sipcheck/data.lisp")
 
-(load "processpcap/tools.lisp")
-(load "processpcap/test-05-udp.lisp")
-(load "processpcap/output-to-var.lisp")
-(load "processpcap/rtp.lisp")
+;;(load "processpcap/tools.lisp")
+;;(load "processpcap/test-05-udp.lisp")
+;;(load "processpcap/output-to-var.lisp")
+;;(load "processpcap/rtp.lisp")
 
 (load "ip-header.lisp")
 (load "tools.lisp")
@@ -54,13 +64,13 @@
 (defun set-color (x)
   (format nil "<font color='~A'>~A</font>" (cadr x) (car x)))
 
-(defun convert-ppcap-to-html (filename)
-  (let ((text-result (get-messages-from-ppcap (pcap-process filename))))
-    (output-2html (car text-result) (cadr text-result))))
+;;(defun convert-ppcap-to-html (filename)
+;;  (let ((text-result (get-messages-from-ppcap (pcap-process filename))))
+;;    (output-2html (car text-result) (cadr text-result))))
 
 (defun set-color-list (mame)
   (progn
-    (print mame)
+    ;(print mame)
     (mapcar (lambda (x)
 	      (if (consp x)
 		  (set-color x)
@@ -180,6 +190,8 @@
     (substitute-char-for-html-string #\" "&quot;" result)
     result))
 
+
+
 ;; (get-messages (processpcap::pcap-process "123.pcapng"))
 ;; (get-messages-from-ppcap (pcap-process "123.pcapng"))
 ;; (setf *temp* *)
@@ -191,3 +203,93 @@
 ;;(setf *tt2* (nth 11 (cadr *temp2*)))
 ;;(compare-message (make-string-input-stream *tt2*) (make-string-input-stream *tt1*))
 
+(defun output-message-2html (eva-message base-message)
+  (standard-page (:title "test")
+    (:div :id "\"contents\""
+	  (:table
+	   (multiple-value-bind (temp1-result
+				 temp2-result
+				 matched-index-base matched-index-eva)
+	       (compare-message (make-string-input-stream eva-message)
+				(make-string-input-stream base-message))
+	     (loop for x from 0 do
+		  (let 
+		      ((tr1 (nth x (html-escape temp1-result)))
+		       (z (nth x matched-index-eva))
+		       (y (nth x matched-index-base))
+		       (tr2 (nth x (html-escape temp2-result))))
+		    (unless (or tr1 z y tr2) (return))
+		    (debug "output-2html-2" tr1 z y tr2)
+		    (cl-who:htm
+		     (:tr
+		      (:td (cl-who:fmt
+			    (format nil "~{~a~}" (set-color-list tr1))))
+		      (:td (cl-who:fmt ;;(format nil "~2,'_d" z)))
+			    (cond ((not (null z))
+				   (format nil "~a" (_totail z)))
+				  ((null tr1) "N/A")
+				  (t (set-color '("NIL" "red"))))))
+		      (:td (cl-who:fmt ;;(format nil "~2,'_d" y)))
+			    (cond ((not (null y)) (format nil "~5,'_d" y))
+				  ((null tr2) "N/A")
+				  (t (set-color '("NIL" "red"))))))
+		      (:td (cl-who:fmt
+			    (format nil "~{~a~}" (set-color-list tr2))))
+		      )))))))))
+
+
+(defun compare-2pcap (eva-filename base-filename output-filename)
+  (let ((result1 (get-messages-from-ppcap (pcap-process eva-filename)))
+	(result2 (get-messages-from-ppcap (pcap-process base-filename))))
+    (let ((eva-messages (apply #'append result1))
+	  (base-messages (apply #'append result2)))
+      (let ((result
+	     (standard-page (:title "messages")
+	       (:div :id "\"contents\""
+		     (:table
+		      (:tr
+		       (:td (fmt eva-filename)) (:td)(:td)(:td (fmt base-filename)))
+		      (loop for eva-m in eva-messages
+			 for base-m in base-messages do
+			   (multiple-value-bind (temp1-result
+						 temp2-result
+						 matched-index-base matched-index-eva)
+
+			       (compare-message (make-string-input-stream eva-m)
+						(make-string-input-stream base-m))
+			       (debug "sdp zure" temp1-result temp2-result matched-index-base matched-index-eva)
+			       (debug "sdp zure" (length temp1-result) (length  temp2-result) (length matched-index-base) (length  matched-index-eva))
+			     (cl-who:htm
+			      (:tr
+			       (:td :align "center" (fmt (repeat-string "=" 75)))
+			       (:td (fmt (repeat-string "=" 4)))
+			       (:td (fmt (repeat-string "=" 4)))
+			       (:td :align "center" (fmt (repeat-string "=" 75)))))
+			     (loop for x from 0 do
+				  (let 
+				      ((tr1 (nth x (html-escape temp1-result)))
+				       (z (nth x matched-index-eva))
+				       (y (nth x matched-index-base))
+				       (tr2 (nth x (html-escape temp2-result))))
+				    (unless (or tr1 z y tr2) (return))
+				    (debug "output-2html-2" tr1 z y tr2)
+				    (cl-who:htm
+				     (:tr
+				      (:td (cl-who:fmt
+					    (format nil "~{~a~}" (set-color-list tr1))))
+				      (:td (cl-who:fmt ;;(format nil "~2,'_d" z)))
+					    (cond ((not (null z))
+						   (format nil "~a" (_totail z)))
+						  ((null tr1) "N/A")
+						  (t (set-color '("NIL" "red"))))))
+				      (:td (cl-who:fmt ;;(format nil "~2,'_d" y)))
+					    (cond ((not (null y)) (format nil "~5,'_d" y))
+						  ((null tr2) "N/A")
+						  (t (set-color '("NIL" "red"))))))
+				      (:td (cl-who:fmt
+					    (format nil "~{~a~}" (set-color-list tr2)))))
+				     ))))))))))
+	(with-open-file (out output-filename :if-exists :supersede :if-does-not-exist :create :direction :output)
+	  (format out result))))))
+
+		     
