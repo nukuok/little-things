@@ -2,7 +2,7 @@
 
 ;;;; 
 ;;;; file-path color-set ip-set
-(add-tool "pcap-process")
+(add-tool "pcap-process-page")
 
 (defun strong-color (string color)
   (format t "<strong><font color=~a> ~a </font></strong>" color string))
@@ -15,7 +15,7 @@
     (let ((mame (parse-integer num)))
       (cond ((= mame 0) "File not found.")))))
 
-(define-url-fn (pcap-process)
+(define-url-fn (pcap-process-page)
   (standard-page-with-title (:title "Pcap-process")
     (:h1 (:u "Pcap Process Settings"))
     (:hr :size 5 :color "orange")
@@ -103,6 +103,6 @@
     (handler-case (standard-page-with-title (:title "pcap analysis")
 		    (htm
 		     (fmt "~a" (output2html-string filepath))))
-      (ccl::simple-file-error () (redirect "/pcap-process.htm?e=0")))))
+      (ccl::simple-file-error () (redirect "/pcap-process-page.htm?e=0")))))
 
 

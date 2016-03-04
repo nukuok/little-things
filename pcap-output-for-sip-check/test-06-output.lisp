@@ -8,20 +8,6 @@
   (:use :cl :processpcap :sipcheck :cl-who :custom-tools))
 (in-package :sbc-tools)
 
-
-;;(load "processpcap/module.lisp")
-;;(load "sipcheck/module.lisp")
-
-;;(load "sipcheck/data-extract2.lisp")
-;;(load "sipcheck/check.lisp")
-;;(load "sipcheck/compare-message.lisp")
-;;(load "sipcheck/data.lisp")
-
-;;(load "processpcap/tools.lisp")
-;;(load "processpcap/test-05-udp.lisp")
-;;(load "processpcap/output-to-var.lisp")
-;;(load "processpcap/rtp.lisp")
-
 (load "ip-header.lisp")
 (load "tools.lisp")
 (load "html.lisp")
@@ -96,7 +82,8 @@
 	       for temp2 in base-messages do
 		 (multiple-value-bind (temp1-result
 				       temp2-result
-				       matched-index-base matched-index-eva)
+;;				       matched-index-base matched-index-eva)
+				       matched-index-eva matched-index-base)
 		     (compare-message (make-string-input-stream temp1)
 				      (make-string-input-stream temp2))
 		   (cl-who:htm (:tr (:td "========================================")
@@ -134,7 +121,8 @@
 	  (:table
 	   (multiple-value-bind (temp1-result
 				 temp2-result
-				 matched-index-base matched-index-eva)
+				 matched-index-eva matched-index-base)
+	       ;matched-index-base matched-index-eva)
 	       (compare-message (make-string-input-stream eva-message)
 				(make-string-input-stream base-message))
 	     (loop for x from 0 do
@@ -209,7 +197,8 @@
 	  (:table
 	   (multiple-value-bind (temp1-result
 				 temp2-result
-				 matched-index-base matched-index-eva)
+					;matched-index-base matched-index-eva)
+				 matched-index-eva matched-index-base)
 	       (compare-message (make-string-input-stream eva-message)
 				(make-string-input-stream base-message))
 	     (loop for x from 0 do
@@ -253,8 +242,8 @@
 			 for base-m in base-messages do
 			   (multiple-value-bind (temp1-result
 						 temp2-result
-						 matched-index-base matched-index-eva)
-
+					;matched-index-base matched-index-eva)
+						 matched-index-eva matched-index-base)
 			       (compare-message (make-string-input-stream eva-m)
 						(make-string-input-stream base-m))
 			       (debug "sdp zure" temp1-result temp2-result matched-index-base matched-index-eva)
