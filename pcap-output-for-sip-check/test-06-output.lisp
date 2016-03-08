@@ -29,7 +29,8 @@
 
 (defun get-messages-from-ppcap (p-pcap-result)
   (let (left-messages right-messages)
-    (loop for x in (remove-duplicates p-pcap-result) do
+;;    (loop for x in (remove-duplicates p-pcap-result) do
+    (loop for x in  p-pcap-result do
 	 (let ((source (determine-column-and-array (car x))))
 	       (cond
 		 ((or (= source 1) (= source 2))
@@ -39,7 +40,8 @@
 		  (push (seq-to-string
 			 (remove 13 (caddr x))) right-messages))
 		 (t nil))))
-    (list (reverse left-messages) (reverse right-messages))))
+    (list (reverse (remove-duplicates left-messages :test #'string-equal))
+	  (reverse (remove-duplicates right-messages :test #'string-equal)))))
 
 ;;(cl-who:with-html-output-to-string (*standard-output*) (:font :color "red" "def"))
 
@@ -267,10 +269,11 @@
 				      (:td (cl-who:fmt
 					    (format nil "~{~a~}" (set-color-list tr1))))
 				      (:td (cl-who:fmt ;;(format nil "~2,'_d" z)))
-					    (cond ((not (null z))
-						   (format nil "~a" (_totail z)))
-						  ((null tr1) "N/A")
-						  (t (set-color '("NIL" "red"))))))
+					    (cond
+					      ((not (null z))
+					       (set-red-for-duplicate-elements-in-list x z matched-index-eva))
+					      ((null tr1) "N/A")
+					      (t (set-color '("NIL" "red"))))))
 				      (:td (cl-who:fmt ;;(format nil "~2,'_d" y)))
 					    (cond ((not (null y)) (format nil "~5,'_d" y))
 						  ((null tr2) "N/A")
@@ -281,4 +284,13 @@
 	(with-open-file (out output-filename :if-exists :supersede :if-does-not-exist :create :direction :output)
 	  (format out result))))))
 
+(defun set-red-for-duplicate-elements-in-list (index element list)
+  (let* ((mame (format nil "~a" (_totail element)))
+	(space-position (position "Space" list :test #'equal))
+	(sub-list (if (< index space-position)
+		      (subseq list 0 space-position)
+		      (subseq list space-position))))
+    (if (uniquep element sub-list)
+	mame
+	(set-color (list mame "red")))))
 		     

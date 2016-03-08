@@ -77,9 +77,4 @@
 			    (fmt "link"))))))))))
 
 
-(print "XXXXXXXXXXXXXXXXXXXXXXXXXX")
-(print "XXXXXXXXXXXXXXXXXXXXXXXXXX")
-(print "       CNET primer")
-(print "XXXXXXXXXXXXXXXXXXXXXXXXXX")
-(print "XXXXXXXXXXXXXXXXXXXXXXXXXX")
 
