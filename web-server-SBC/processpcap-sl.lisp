@@ -26,7 +26,7 @@
 (defun get-data-list ()
   (mapcar #'car *processpcap-data*))
 
-(defun load-data (datename)
+(defun load-data (dataname)
   (let ((mame (assoc dataname *processpcap-data*)))
     (setf *filepath* (cadr mame)
 	  *ip-header-list* (caddr mame)
