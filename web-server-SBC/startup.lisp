@@ -8,9 +8,11 @@
 
 ;;;;
 (ql:quickload :processpcap) ;; heyhey
+(ql:quickload :sipcheck) 
+(ql:quickload :custom-tools) 
 
 (defpackage :sbc-tools
-  (:use :cl :cl-who :hunchentoot :parenscript :processpcap))
+  (:use :cl :cl-who :hunchentoot :parenscript :processpcap :custom-tools :cl-user))
 (in-package :sbc-tools)
 
 (defvar parenscript::suppress-values? nil)
