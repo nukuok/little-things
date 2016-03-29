@@ -1,0 +1,857 @@
+IBCF-FJ#show config
+  system
+    users
+      user defcraft
+        description "Default craft user"
+        level super-user
+        password hashed-value $6$RfT0DZUq$TJHdmFKpiKj7IHJyzxXTn4tn/haV7/wj7aR3Pin229WQp3XdRPnHKbAekZEiA89v72jYB/N0MPgDqAAus0vK71
+    service-interface serv1
+      description "Internal Network IPv4"
+      service-network 1
+      port-group-name Core_IPv4
+      ipv4
+        subnet-prefix-length 26
+        gateway-ip-address 222.231.228.154
+        local-ip-address 222.231.228.139
+          service-address IntAddress4-01
+        local-ip-address 222.231.228.140
+          service-address IntAddress4-02
+        probes-source-style specific-source
+        activate
+      network-security trusted
+      criticality 1000
+    service-interface serv2
+      description "Internal Network IPv6"
+      service-network 2
+      port-group-name Core_IPv6
+      ipv6
+        subnet-prefix-length 64
+        gateway-ip-address 2001:A7FF:2100:D::E002
+        local-ip-address 2001:A7FF:2100:D::11
+          service-address IntAddress6-01
+        local-ip-address 2001:A7FF:2100:D::12
+          service-address IntAddress6-02
+        probes-source-style specific-source
+        activate
+      network-security trusted
+      criticality 1000
+      probes-type none
+    service-interface serv3
+      description " External Network IPv4"
+      service-network 3
+      port-group-name Access_IPv4
+      ipv4
+        subnet-prefix-length 26
+        gateway-ip-address 222.231.228.62
+        local-ip-address 222.231.228.11
+          service-address ExtAddress4-01
+        local-ip-address 222.231.228.12
+          service-address ExtAddress4-02
+        probes-source-style specific-source
+        activate
+      network-security untrusted
+      criticality 1000
+    service-interface serv4
+      description "External Network IPv6"
+      service-network 4
+      port-group-name Access_IPv6
+      ipv6
+        subnet-prefix-length 64
+        gateway-ip-address 2001:A7FF:2100:C::E001
+        local-ip-address 2001:A7FF:2100:C::11
+          service-address ExtAddress6-01
+        local-ip-address 2001:A7FF:2100:C::12
+          service-address ExtAddress6-02
+        probes-source-style specific-source
+        activate
+      network-security untrusted
+      criticality 1000
+      probes-type none
+    service-interface serv5
+      description "H.248 IPv4 Interface"
+      service-network 5
+      port-group-name H248
+      ipv4
+        subnet-prefix-length 18
+        gateway-ip-address 192.168.122.1
+        local-ip-address 192.168.114.1
+          service-address ControlAddress4-01
+        probes-source-style subnet-all-zero
+        activate
+      network-security trusted
+      criticality 1000
+      probes-type none
+    ip-access-control
+      trusted-sources
+        permit-peer service-network 3 ipv4 124.245.254.37
+        permit-peer service-network 3 ipv4 124.245.254.38
+        permit-peer service-network 3 ipv4 222.231.228.58
+        permit-peer service-network 3 ipv4 222.231.228.59
+        permit-peer service-network 3 ipv4 222.231.228.60
+        permit-peer service-network 4 ipv6 2001:A7FF:2100:C::F001
+        permit-peer service-network 4 ipv6 2001:A7FF:2100:C::F002
+        permit-peer service-network 4 ipv6 2001:A7FF:2100:C::F003
+        permit-peer service-network 4 ipv6 2001:A7FF:2100:10::A001
+        permit-peer service-network 4 ipv6 2001:A7FF:2100:10::A002
+  sbc
+    codec list CodecList-for-A
+      codec-entry AMR 1
+    codec list CodecList-for-B
+      codec-entry AMR 1
+    codec list CodecList-for-NTTwest
+      codec-entry PCMU 1
+    diagnostics
+      alarm-thresholds
+        call-alarms
+          active-failures-perc max 2% clear 2%
+        license-alarms
+          minor-threshold 60% clear 50%
+          major-threshold 80% clear 70%
+          critical-clear 90%
+        sip-alarms
+          oldest-queued-packet max 1000 clear 900
+        system-alarms
+          cpu max 70% clear 65%
+          free-mem-mb min 1500 clear 1650
+      sas remote-address ipv4 192.168.2.253
+    signaling
+      account CarrierA
+      account CarrierB
+      account NTTWest
+      sip message-manipulation
+        lua-config-set 1
+          lua-profile lua-DeleteCATinf
+            profile-code ! Multi-line command
+local sdp = msg:get_sdp()
+if (not sdp) then
+  error("Called stream_state_set on non-stream object")
+end
+for a_line in sdp:select_by_prefix("a="):iter() do
+  local a_line_text = string.match(a_line:get_text(), "a=[^%s]+")
+  if (a_line_text == "a=content:g.3gpp.cat") then
+        a_line:delete()
+  end
+end
+---END---
+          lua-profile lua-DeleteBearerRTCP
+            profile-code ! Multi-line command
+local sdp = msg:get_sdp()
+if (not sdp) then
+  error("Called stream_state_set on non-stream object")
+end
+for b_line in sdp:select_by_prefix("b="):iter() do
+  local b_line_text = string.match(b_line:get_text(), "b=[^%:]+")
+  if ((b_line_text == "b=AS") or
+    (b_line_text == "b=RR") or
+    (b_line_text == "b=RS")) then
+        b_line:delete()
+  end
+end
+---END---
+          lua-profile lua-DeletePreconPara
+            profile-code ! Multi-line command
+local sdp = msg:get_sdp()
+if (not sdp) then
+  error("Called stream_state_set on non-stream object")
+end
+for a_line in sdp:select_by_prefix("a="):iter() do
+  local a_line_text = string.match(a_line:get_text(), "a=[^%:]+")
+  if ((a_line_text == "a=curr") or
+    (a_line_text == "a=des") or
+    (a_line_text == "a=conf")) then
+        a_line:delete()
+  end
+end
+---END---
+          lua-profile lua-remove-amr-or-pcmu
+            profile-code ! Multi-line command
+local sdp = msg:get_sdp()
+local pcmu_state = "none"
+local amrnb_state = "none"
+local amrwb_state = "none"
+MeLogger.info("sdp" .. sdp)
+ReqRes = msg:get_app_variables()["reqres"]
+MeLogger.info("Request_Response " .. ReqRes)
+update_flag = msg:get_app_variables()["up_flag"]
+MeLogger.info("UPDATE ON or OFF " .. update_flag)
+if(ReqRes == "REQ") then
+  if (not sdp) then
+    error("Called stream_state_set on non-stream object")
+  end
+  if(update_flag == "ON") then
+    for a_line in sdp:select_by_prefix("a="):iter() do
+      local a_line_text = string.match(a_line:get_text(), "a=[^%s]+")
+      MeLogger.info("a_line_text ".. a_line_text)
+      if (a_line_text == "a=rtpmap:0") then
+        MeLogger.info("PCMU PT0 found")
+        pcmu_state = "exist"
+      end
+      if (a_line_text == "a=rtpmap:97") then
+        MeLogger.info("AMR-NB PT97 found")
+        amrnb_state = "exist"
+      end
+      if (a_line_text == "a=rtpmap:96") then
+        MeLogger.info("AMR-WB PT96 or telephone-event PT96 found")
+        amrwb_state = "exist"
+      end
+    end
+    MeLogger.info("pcmu_state " .. pcmu_state)
+    MeLogger.info("amrnb_state " .. amrnb_state)
+    MeLogger.info("amrwb_state " .. amrwb_state)
+    if ((pcmu_state == "exist") and (amrnb_state == "exist")) then
+      for a_line in sdp:select_by_prefix("a="):iter() do
+        local a_line_text = string.match(a_line:get_text(), "a=[^%s]+")
+        MeLogger.info("a_line_text ".. a_line_text)
+        if ((a_line_text == "a=rtpmap:97")
+            or (a_line_text == "a=rtpmap:98")
+            or (a_line_text == "a=fmtp:97")
+            or (a_line_text == "a=fmtp:98")) then
+          a_line:delete()
+        end
+      end
+      local path_line = msg.sdp:select_by_prefix("m=audio")[1]
+      path_line:replace("97", "")
+      path_line:replace("  ", " ")
+      path_line:replace("98", "")
+      path_line:replace("  ", " ")
+    end
+    if ((pcmu_state == "exist") and (amrwb_state == "exist") and (amrnb_state == "none"))then
+      for a_line in sdp:select_by_prefix("a="):iter() do
+        local a_line_text = string.match(a_line:get_text(), "a=[^%s]+")
+        MeLogger.info("a_line_text ".. a_line_text)
+        if (a_line_text == "a=rtpmap:0") then
+          a_line:delete()
+        end
+      end
+      local path_line = msg.sdp:select_by_prefix("m=audio")[1]
+      path_line:replace("0", "")
+      path_line:replace("  ", " ")
+    end
+  end
+end
+---END---
+          lua-profile lua-Add-amr-octet-align
+            profile-code ! Multi-line command
+local sdp = msg:get_sdp()
+MeLogger.info("sdp" .. sdp)
+local nb_ol1 = "fmtp:98 octet-align=1"
+local nb_ol2 = "rtpmap:98 AMR/8000"
+ReqRes = msg:get_app_variables()["reqres"]
+MeLogger.info("Request_Response" .. ReqRes)
+if(ReqRes == "REQ") then
+  if (not sdp) then
+    error("Called stream_state_set on non-stream object")
+  end
+  for a_line in sdp:select_by_prefix("a="):iter() do
+    local a_line_text = string.match(a_line:get_text(), "a=[^%s]+")
+    MeLogger.info("a_line_text ".. a_line_text)
+    if (a_line_text == "a=rtpmap:0") then
+      MeLogger.info("PCMU found")
+      sdp:insert_child_after(MeSdpLine.new("a=" .. nb_ol1), a_line)
+      sdp:insert_child_after(MeSdpLine.new("a=" .. nb_ol2), a_line)
+      for m_line in sdp:select_by_prefix("m="):iter() do
+        local m_line_text = string.match(m_line:get_text(), "m=[^%s]+")
+        if (m_line_text == "m=audio") then
+          MeLogger.info("m=audio found")
+          local new_m_line = (m_line:get_text():gsub("^%s*(.-)%s*$", "%1"))
+          new_m_line = new_m_line .. " " .. 98
+          m_line:replace(m_line:get_text(), new_m_line)
+        end
+      end
+    end
+  end
+end
+---END---
+          lua-profile lua-Add-telephone-enevt
+            profile-code ! Multi-line command
+local sdp = msg:get_sdp()
+local tel_nb1 = "fmtp:101 0-15"
+ReqRes = msg:get_app_variables()["reqres"]
+MeLogger.info("Request_Response" .. ReqRes)
+if(ReqRes == "REQ") then
+  if (not sdp) then
+    error("Called stream_state_set on non-stream object")
+  end
+  for a_line in sdp:select_by_prefix("a="):iter() do
+    local a_line_text = string.match(a_line:get_text(), "a=[^%s]+")
+    MeLogger.info("a_line_text ".. a_line_text)
+    if (a_line_text == "a=rtpmap:101") then
+      MeLogger.info("a=rtpmap:101 found")
+      sdp:insert_child_after(MeSdpLine.new("a=" .. tel_nb1), a_line)
+      MeLogger.info("sdp" .. sdp)
+    end
+  end
+end
+---END---
+          lua-profile lua-CheckForExceptAudio
+            profile-code ! Multi-line command
+local send_lines = msg.sdp:select_by_prefix("m=video")
+for send in MeSelection.iter(send_lines) do
+msg:get_app_variables()["rejected_by_lua"] = "304"
+end
+local send_lines = msg.sdp:select_by_prefix("m=application")
+for send in MeSelection.iter(send_lines) do
+msg:get_app_variables()["rejected_by_lua"] = "304"
+end
+local send_lines = msg.sdp:select_by_prefix("m=image")
+for send in MeSelection.iter(send_lines) do
+msg:get_app_variables()["rejected_by_lua"] = "304"
+end
+local send_lines = msg.sdp:select_by_prefix("m=message")
+for send in MeSelection.iter(send_lines) do
+msg:get_app_variables()["rejected_by_lua"] = "304"
+end
+---END---
+          lua-profile lua-CheckForExceptRTPAVP
+            profile-code ! Multi-line command
+local sdp = msg:get_sdp()
+for media_line in sdp:select_by_prefix("m="):iter() do
+  MeLogger.info("media_line ".. media_line)
+  local type, port, protocol, after_proto = media_line:get_text():match("m=(.-) (.-) (.-) (.+)")
+  MeLogger.info("type ".. type)
+  MeLogger.info("port ".. port)
+  MeLogger.info("protocol ".. protocol)
+  MeLogger.info("after_proto ".. after_proto)
+  if ((protocol == "TCP") or
+    (protocol == "RTP/AVPF") or
+    (protocol == "TCP/MSRP") or
+    (protocol == "udptl")) then
+      msg:get_app_variables()["rejected_by_lua"] = "302"
+  end
+end
+---END---
+          activate
+        header-profile HP-add-PEM
+          header P-Early-Media
+            action add-header value supported
+              condition advanced (msg.is_request)
+        header-profile HP-remove-PEM
+          header P-Early-Media
+            action strip
+        header-profile HP-remove-Accept
+          header Accept
+            action strip
+        header-profile HP-remove-Server
+          header Server
+            action strip
+        header-profile HP-replace-allow
+          header Allow
+            action replace-value value INVITE,ACK,BYE,CANCEL,PRACK,UPDATE
+        header-profile HP-remove-Contact
+          header Contact
+            action strip
+              condition advanced "((msg.status_code EQ \"200\") AND ((msg.first-header(\"Cseq\").value CONTAINS \"PRACK\") OR (msg.first-header(\"Cseq\").value CONTAINS \"BYE\")))"
+        header-profile HP-remove-Privacy
+          header Privacy
+            action strip
+        header-profile Lua-ReqRes-pickup
+          header Store-Rule
+            action store-vars
+              condition advanced "(((msg.is_request) AND (STORE (reqres, \"REQ\"))) OR (STORE (reqres, \"RES\")))"
+        header-profile Lua-UPDATE-pickup
+          header Store-Rule
+            action store-vars
+              condition advanced "(((msg.is_request) AND (msg.first-header(\"Cseq\").value CONTAINS \"UPDATE\") AND (STORE (up_flag, \"ON\"))) OR (STORE (up_flag, \"OFF\")))"
+        header-profile HP-add-PEM_sendonly
+          header P-Early-Media
+            action add-header value sendonly
+              condition advanced "(msg.first-header(\"Content-Type\").value CONTAINS \"application/sdp\")"
+        header-profile HP-move-cpc-forward
+          header Store-Rule entry 1
+            action store-vars
+              condition advanced "(STORE (PAI1, msg.first-header(\"P-Asserted-Identity\").value))"
+          header Store-Rule entry 2
+            action store-vars
+              condition advanced "(STORE (PAI2, msg.nth-header(\"P-Asserted-Identity\",2).value))"
+          header Store-Rule entry 3
+            action store-vars
+              condition advanced "(REGEX (msg.nth-header(\"P-Asserted-Identity\",2).value, '(.*);cpc=([^@]*)@(.*)>', Pre_CPC2, CPC_VALUE2, Post_AT2))"
+          header Store-Rule entry 4
+            action store-vars
+              condition advanced "(REGEX (msg.first-header(\"P-Asserted-Identity\").value, '(.*);cpc=([^>]*)@([^>]*)(.*)', Pre_colon, cpc_value, Post_at, From_gt))"
+          header P-Asserted-Identity entry 1
+            action strip
+              condition advanced "(((DEFINED (PAI1)) AND (DEFINED (CPC_VALUE2))) OR (DEFINED (cpc_value)))"
+          header P-Asserted-Identity entry 2
+            action add-header value ${PAI1}
+              condition advanced "((DEFINED (PAI1)) AND (DEFINED (CPC_VALUE2)) AND (NOT (DEFINED (cpc_value))))"
+          header P-Asserted-Identity entry 3
+            action add-header value ${Pre_CPC2}@${Post_AT2};cpc=${CPC_VALUE2}>
+              condition advanced "((DEFINED (PAI1)) AND (DEFINED (CPC_VALUE2)) AND (NOT (DEFINED (cpc_value))))"
+          header P-Asserted-Identity entry 4
+            action add-header value ${Pre_colon}@${Post_at};cpc=${cpc_value}${From_gt}
+              condition advanced "((DEFINED (cpc_value)) AND (NOT (DEFINED (CPC_VALUE2))))"
+          header P-Asserted-Identity entry 5
+            action add-header value ${PAI2}
+              condition advanced "((DEFINED (cpc_value)) AND (NOT (DEFINED (CPC_VALUE2))) AND (DEFINED (PAI2)))"
+        header-profile HP-remove-Call-Info
+          header Call-Info
+            action strip
+        header-profile HP-simplize-Contact
+          header Contact
+            action replace-value value ${Pre_colon}:${Post_at}>
+              condition advanced "((DEFINED (Pre_colon)) AND (DEFINED (Pre_at)) AND (DEFINED (Post_at)))"
+          header Store-Rule
+            action store-vars
+              condition advanced "(REGEX (msg.first-header(\"Contact\").value, '([^:]*):([^@]*)@([^>]*)>', Pre_colon, Pre_at, Post_at))"
+        header-profile HP-move-cpc-backward
+          header Store-Rule entry 1
+            action store-vars
+              condition advanced "(STORE (PAI1, msg.first-header(\"P-Asserted-Identity\").value))"
+          header Store-Rule entry 2
+            action store-vars
+              condition advanced "(STORE (PAI2, msg.nth-header(\"P-Asserted-Identity\",2).value))"
+          header Store-Rule entry 3
+            action store-vars
+              condition advanced "(REGEX (msg.nth-header(\"P-Asserted-Identity\",2).value, '([^@]*)@(.*);cpc=([^>]*)(.*)', Pre_AT2, Pre_CPC2, CPC_VALUE2, Post_CPC2))"
+          header Store-Rule entry 4
+            action store-vars
+              condition advanced "(REGEX (msg.first-header(\"P-Asserted-Identity\").value, '([^@]*)@([^>]*);cpc=([^>]*)(.*)', Pre_at, Post_at, cpc_value, From_gt))"
+          header P-Asserted-Identity entry 1
+            action strip
+              condition advanced "((msg.is_request) AND (((DEFINED (PAI1)) AND (DEFINED (CPC_VALUE2))) OR (DEFINED (cpc_value))))"
+          header P-Asserted-Identity entry 2
+            action add-header value ${PAI1}
+              condition advanced "((msg.is_request) AND ((DEFINED (PAI1)) AND (DEFINED (CPC_VALUE2))) AND (NOT (DEFINED (cpc_value))))"
+          header P-Asserted-Identity entry 3
+            action add-header value ${Pre_AT2};cpc=${CPC_VALUE2}@${Pre_CPC2}${Post_CPC2}
+              condition advanced "((msg.is_request) AND ((DEFINED (PAI1)) AND (DEFINED (CPC_VALUE2))) AND (NOT (DEFINED (cpc_value))))"
+          header P-Asserted-Identity entry 4
+            action add-header value ${Pre_at};cpc=${cpc_value}@${Post_at}${From_gt}
+              condition advanced "((msg.is_request) AND (DEFINED (cpc_value)) AND (NOT (DEFINED (CPC_VALUE2))))"
+          header P-Asserted-Identity entry 5
+            action add-header value ${PAI2}
+              condition advanced "((msg.is_request) AND (DEFINED (cpc_value)) AND (NOT (DEFINED (CPC_VALUE2))) AND (DEFINED (PAI2)))"
+        header-profile HP-Add-Warning-By-Lua
+          header Warning
+            action add-header value ${rejected_by_lua}
+              condition advanced "((DEFINED (rejected_by_lua)) AND (NOT (\"{rejected_by_lua}\" EQ \"\")))"
+        header-profile HP-add-Supported-100rel
+          header Supported
+            action add-header value 100rel
+              condition advanced "((msg.status_code EQ \"200\") AND (msg.first-header(\"Cseq\").value CONTAINS \"INVITE\"))"
+        header-profile HP-Add-Reject-req-By-Lua
+          header To
+            action reject-request
+              condition advanced "(DEFINED (rejected_by_lua))"
+        header-profile HP-replace-Supported-100rel
+          header Supported
+            action replace-value value 100rel
+              condition advanced "((msg.status_code EQ \"200\") AND (msg.first-header(\"Cseq\").value CONTAINS \"INVITE\"))"
+        method-profile MP-rm-PEM-180
+          method 180
+            action pass
+            header-profile HP-remove-PEM
+        method-profile MP-rm-PEM-183
+          method 183
+            action pass
+            header-profile HP-remove-PEM
+        method-profile MP-rm-Privacy
+          method ACK
+            action pass
+            header-profile HP-remove-Privacy
+          method BYE
+            action pass
+            header-profile HP-remove-Privacy
+          method PRACK
+            action pass
+            header-profile HP-remove-Privacy
+          method CANCEL
+            action pass
+            header-profile HP-remove-Privacy
+          method UPDATE
+            action pass
+            header-profile HP-remove-Privacy
+        method-profile MP-add-PEM-180
+          method 180
+            action pass
+            header-profile HP-add-PEM_sendonly
+        method-profile MP-add-PEM-183
+          method 183
+            action pass
+            header-profile HP-add-PEM_sendonly
+        method-profile MP-reject-REFER
+          method REFER
+            action drop-msg
+        method-profile MP-reject-NOTIFY
+          method NOTIFY
+            action drop-msg
+        method-profile MP-rm-PEM-INVITE
+          method INVITE
+            action pass
+            header-profile HP-remove-PEM
+        method-profile MP-add-PEM-INVITE
+          method INVITE
+            action pass
+            header-profile HP-add-PEM
+        method-profile MP-reject-MESSAGE
+          method MESSAGE
+            action drop-msg
+        method-profile MP-mv-cpc-bw-INVITE
+          method INVITE
+            action pass
+            header-profile HP-move-cpc-backward
+        method-profile MP-mv-cpc-fw-INVITE
+          method INVITE
+            action pass
+            header-profile HP-move-cpc-forward
+        method-profile MP-reject-SUBSCRIBE
+          method SUBSCRIBE
+            action drop-msg
+        method-profile MP-simplize-Contact
+          method 100
+            action pass
+            header-profile HP-simplize-Contact
+          method 180
+            action pass
+            header-profile HP-simplize-Contact
+          method 200
+            action pass
+            header-profile HP-simplize-Contact
+          method INVITE
+            action pass
+            header-profile HP-simplize-Contact
+        option-profile OP-Supported
+          profile-action pass
+          option timer
+          option 100rel
+      sip timer
+        connection-idle-timeout 600000
+      adjacency sip Carrier_A_IPv4
+        description "Carrier A Adjacency IPv4"
+        account CarrierA
+        call-media-policy
+          hold-setting hold-sendonly
+          inband-tone-interworking always
+          transcoding
+            trigger always
+            offer-generation codec-template CodecList-for-A
+        interop
+          header-settings expires suppress
+          message-manipulation
+            edit-profiles inbound MP-rm-PEM-180,MP-rm-PEM-183,MP-rm-PEM-INVITE,lua-DeletePreconPara,lua-DeleteCATinf,HP-Add-Warning-By-Lua,HP-Add-Reject-req-By-Lua,OP-Supported
+            edit-profiles outbound Lua-ReqRes-pickup,MP-mv-cpc-bw-INVITE,HP-remove-Server,MP-rm-Privacy,HP-remove-Contact,MP-add-PEM-INVITE,MP-add-PEM-180,MP-add-PEM-183,lua-Add-amr-octet-align,HP-remove-Call-Info,HP-remove-Accept,HP-replace-allow
+        msc-location-id 1
+        force-signaling-peer all-requests
+        adjacency-type preset-peering
+        message-manipulation
+          lua-config-set 1
+        mandated-transport tcp
+        privacy trusted
+        realm ExtMediaIPv4
+        service-address ExtAddress4-02
+          # service-network 3
+          # signaling-local-address ipv4 222.231.228.12
+        signaling-local-port 5060
+        signaling-peer 222.231.228.58
+        signaling-peer-port 5060
+        statistics-setting detail
+        deactivation-mode normal
+        activate
+      adjacency sip Carrier_A_IPv6
+        description "Carrier A Adjacency IPv6"
+        account CarrierA
+        call-media-policy
+          hold-setting hold-sendonly
+          inband-tone-interworking always
+          transcoding
+            trigger always
+            offer-generation codec-template CodecList-for-A
+        interop
+          header-settings expires suppress
+          message-manipulation
+            edit-profiles inbound MP-rm-PEM-180,MP-rm-PEM-183,MP-rm-PEM-INVITE,lua-DeletePreconPara,lua-DeleteCATinf,HP-Add-Warning-By-Lua,HP-Add-Reject-req-By-Lua,OP-Supported
+            edit-profiles outbound Lua-ReqRes-pickup,MP-mv-cpc-bw-INVITE,HP-remove-Server,MP-rm-Privacy,HP-remove-Contact,MP-add-PEM-INVITE,MP-add-PEM-180,MP-add-PEM-183,lua-Add-amr-octet-align,HP-remove-Call-Info,HP-remove-Accept,HP-replace-allow
+        msc-location-id 1
+        force-signaling-peer all-requests
+        adjacency-type preset-peering
+        message-manipulation
+          lua-config-set 1
+        mandated-transport tcp
+        privacy trusted
+        realm ExtMediaIPv6
+        service-address ExtAddress6-02
+          # service-network 4
+          # signaling-local-address ipv6 2001:A7FF:2100:C::12
+        signaling-local-port 5060
+        signaling-peer 2001:a7ff:2100:c::f001
+        signaling-peer-port 5060
+        statistics-setting detail
+        deactivation-mode normal
+        activate
+      adjacency sip Carrier_B_IPv4
+        description "Carrier B Adjacency IPv4"
+        account CarrierB
+        call-media-policy
+          hold-setting hold-sendonly
+          repeat-sdp-on-200ok
+          transcoding
+            trigger always
+            offer-generation codec-template CodecList-for-B
+        interop
+          header-settings expires suppress
+          message-manipulation
+            edit-profiles inbound MP-rm-PEM-180,MP-rm-PEM-183,MP-rm-PEM-INVITE
+            edit-profiles outbound Lua-ReqRes-pickup,HP-remove-Contact,MP-mv-cpc-bw-INVITE,MP-add-PEM-INVITE,MP-add-PEM-180,MP-add-PEM-183,lua-Add-amr-octet-align,MP-rm-Privacy,HP-remove-Server,HP-remove-Call-Info,HP-remove-Accept,HP-replace-allow
+        msc-location-id 1
+        force-signaling-peer all-requests
+        adjacency-type preset-peering
+        message-manipulation
+          lua-config-set 1
+        mandated-transport tcp
+        privacy trusted
+        realm ExtMediaIPv4
+        service-address ExtAddress4-01
+          # service-network 3
+          # signaling-local-address ipv4 222.231.228.11
+        signaling-local-port 5060
+        signaling-peer 222.231.228.58
+        signaling-peer-port 5060
+        statistics-setting detail
+        deactivation-mode normal
+        activate
+      adjacency sip Carrier_B_IPv6
+        description "Carrier B Adjacency IPv6"
+        account CarrierB
+        call-media-policy
+          hold-setting hold-sendonly
+          repeat-sdp-on-200ok
+          transcoding
+            trigger always
+            offer-generation codec-template CodecList-for-B
+        interop
+          header-settings expires suppress
+          message-manipulation
+            edit-profiles inbound MP-rm-PEM-180,MP-rm-PEM-183,MP-rm-PEM-INVITE
+            edit-profiles outbound Lua-ReqRes-pickup,MP-mv-cpc-bw-INVITE,HP-remove-Contact,MP-add-PEM-INVITE,MP-add-PEM-180,MP-add-PEM-183,lua-Add-amr-octet-align,MP-rm-Privacy,HP-remove-Server,HP-remove-Call-Info,HP-remove-Accept,HP-replace-allow
+        msc-location-id 1
+        force-signaling-peer all-requests
+        adjacency-type preset-peering
+        message-manipulation
+          lua-config-set 1
+        mandated-transport tcp
+        privacy trusted
+        realm ExtMediaIPv6
+        service-address ExtAddress6-01
+          # service-network 4
+          # signaling-local-address ipv6 2001:A7FF:2100:C::11
+        signaling-local-port 5060
+        signaling-peer 2001:a7ff:2100:c::f001
+        signaling-peer-port 5060
+        statistics-setting detail
+        deactivation-mode normal
+        activate
+      adjacency sip NTTWest_A_IPv4
+        description "NTT_West Adjacency IPv4"
+        account NTTWest
+        call-media-policy
+          hold-setting hold-sendonly
+          transcoding
+            trigger always
+            offer-generation codec-template CodecList-for-NTTwest
+        interop
+          header-settings expires suppress
+          message-manipulation
+            edit-profiles outbound Lua-ReqRes-pickup,Lua-UPDATE-pickup,HP-remove-Contact,MP-mv-cpc-fw-INVITE,HP-remove-Accept,HP-remove-Call-Info,lua-remove-amr-or-pcmu
+        msc-location-id 0
+        force-signaling-peer all-requests
+        adjacency-type preset-core
+        message-manipulation
+          lua-config-set 1
+        mandated-transport tcp
+        privacy trusted
+        realm IntMediaIPv4
+        service-address IntAddress4-02
+          # service-network 1
+          # signaling-local-address ipv4 222.231.228.140
+        signaling-local-port 5060
+        signaling-peer 222.231.228.186
+        signaling-peer-port 5060
+        statistics-setting detail
+        deactivation-mode normal
+        activate
+      adjacency sip NTTWest_A_IPv6
+        description "NTT_West Adjacency IPv6"
+        account NTTWest
+        call-media-policy
+          hold-setting hold-sendonly
+          transcoding
+            trigger always
+            offer-generation codec-template CodecList-for-NTTwest
+        interop
+          header-settings expires suppress
+          message-manipulation
+            edit-profiles outbound Lua-ReqRes-pickup,Lua-UPDATE-pickup,HP-remove-Contact,MP-mv-cpc-fw-INVITE,HP-remove-Accept,HP-remove-Call-Info,lua-remove-amr-or-pcmu
+        msc-location-id 0
+        force-signaling-peer all-requests
+        adjacency-type preset-core
+        message-manipulation
+          lua-config-set 1
+        mandated-transport tcp
+        privacy trusted
+        realm IntMediaIPv6
+        service-address IntAddress6-02
+          # service-network 2
+          # signaling-local-address ipv6 2001:A7FF:2100:D::12
+        signaling-local-port 5060
+        signaling-peer 2001:a7ff:2100:d::f001
+        signaling-peer-port 5060
+        statistics-setting detail
+        deactivation-mode normal
+        activate
+      adjacency sip NTTWest_B_IPv4
+        description "NTT_West Adjacency IPv4"
+        account NTTWest
+        call-media-policy
+          hold-setting hold-sendonly
+          transcoding
+            trigger always
+            offer-generation codec-template CodecList-for-NTTwest
+        interop
+          header-settings expires suppress
+          message-manipulation
+            edit-profiles outbound MP-mv-cpc-fw-INVITE,HP-remove-Contact
+        msc-location-id 0
+        force-signaling-peer all-requests
+        adjacency-type preset-core
+        message-manipulation
+          lua-config-set 1
+        mandated-transport tcp
+        privacy trusted
+        realm IntMediaIPv4
+        service-address IntAddress4-01
+          # service-network 1
+          # signaling-local-address ipv4 222.231.228.139
+        signaling-local-port 5060
+        signaling-peer 10.20.91.28
+        signaling-peer-port 5060
+        statistics-setting detail
+        deactivation-mode normal
+        activate
+      adjacency sip NTTWest_B_IPv6
+        description "NTT_West Adjacency IPv6"
+        account NTTWest
+        call-media-policy
+          hold-setting hold-sendonly
+          transcoding
+            trigger always
+            offer-generation codec-template CodecList-for-NTTwest
+        interop
+          header-settings expires suppress
+          message-manipulation
+            edit-profiles outbound HP-remove-Contact,MP-mv-cpc-fw-INVITE
+        msc-location-id 0
+        force-signaling-peer all-requests
+        adjacency-type preset-core
+        message-manipulation
+          lua-config-set 1
+        mandated-transport tcp
+        privacy trusted
+        realm IntMediaIPv6
+        service-address IntAddress6-01
+          # service-network 2
+          # signaling-local-address ipv6 2001:A7FF:2100:D::11
+        signaling-local-port 5060
+        signaling-peer 2001:a7ff:2100:d::f001
+        signaling-peer-port 5060
+        statistics-setting detail
+        deactivation-mode normal
+        activate
+      billing
+        file-flip period 60
+        method xml
+      enum
+      call-policy-set 1
+        description "IPv6 Interconnection"
+        first-call-routing-table adjacencySource
+        rtg-src-adjacency-table adjacencySource
+          description "Routing by source"
+          entry 141
+            match-adjacency NTTWest_A_IPv4
+            dst-adjacency Carrier_A_IPv6
+            action complete
+          entry 142
+            match-adjacency NTTWest_B_IPv4
+            dst-adjacency Carrier_B_IPv6
+            action complete
+          entry 161
+            match-adjacency NTTWest_A_IPv6
+            dst-adjacency Carrier_A_IPv6
+            action complete
+          entry 162
+            match-adjacency NTTWest_B_IPv6
+            dst-adjacency Carrier_B_IPv6
+            action complete
+          entry 241
+            match-adjacency Carrier_A_IPv6
+            dst-adjacency NTTWest_A_IPv4
+            action complete
+          entry 242
+            match-adjacency Carrier_B_IPv6
+            dst-adjacency NTTWest_B_IPv4
+            action complete
+          entry 261
+            match-adjacency Carrier_A_IPv4
+            dst-adjacency NTTWest_A_IPv6
+            action complete
+          entry 262
+            match-adjacency Carrier_B_IPv4
+            dst-adjacency NTTWest_B_IPv4
+            action complete
+        complete
+      call-policy-set 2
+        description "IPv4 Interconnection"
+        first-call-routing-table adjacencySource
+        rtg-src-adjacency-table adjacencySource
+          description "Routing by source"
+          entry 141
+            match-adjacency NTTWest_A_IPv4
+            dst-adjacency Carrier_A_IPv4
+            action complete
+          entry 142
+            match-adjacency NTTWest_B_IPv4
+            dst-adjacency Carrier_B_IPv4
+            action complete
+          entry 161
+            match-adjacency NTTWest_A_IPv6
+            dst-adjacency Carrier_A_IPv4
+            action complete
+          entry 162
+            match-adjacency NTTWest_B_IPv6
+            dst-adjacency Carrier_B_IPv4
+            action complete
+          entry 241
+            match-adjacency Carrier_A_IPv4
+            dst-adjacency NTTWest_A_IPv4
+            action complete
+          entry 242
+            match-adjacency Carrier_B_IPv4
+            dst-adjacency NTTWest_B_IPv4
+            action complete
+          entry 261
+            match-adjacency Carrier_A_IPv6
+            dst-adjacency NTTWest_A_IPv6
+            action complete
+          entry 262
+            match-adjacency Carrier_B_IPv6
+            dst-adjacency NTTWest_B_IPv6
+            action complete
+        complete
+      active-call-policy-set 2
+      h248 allow-cfgd-mscs-only
+      h248 local-address index 1
+        address ipv4 192.168.114.1 service-network 5
+        port 2944
+        activate
+      h248 msc ipv4 192.168.122.1 service-network 5
+        description TrGW
+      qos sig default
+        dscp 24
+        marking dscp
+      qos video default
+        dscp 46
+        marking dscp
+      qos voice default
+        dscp 46
+        marking dscp
+IBCF-FJ#
