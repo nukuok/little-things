@@ -23,6 +23,8 @@
 
 (load "/Users/ko_yoyo/Desktop/program/cl/little-things/web-server-kafka/config.lisp")
 (load "/Users/ko_yoyo/Desktop/program/cl/little-things/web-server-kafka/html-formats.lisp")
+(load "/Users/ko_yoyo/Desktop/program/cl/little-things/web-server-kafka/sample-producer.lisp")
+(load "/Users/ko_yoyo/Desktop/program/cl/little-things/web-server-kafka/tools.lisp")
 (load "/Users/ko_yoyo/Desktop/program/cl/little-things/web-server-kafka/interface-to-kafka-rest.lisp")
 (load "/Users/ko_yoyo/Desktop/program/cl/little-things/web-server-kafka/ajax-processor-kafka.lisp")
 (load "/Users/ko_yoyo/Desktop/program/cl/little-things/web-server-kafka/handler-kafka.lisp")

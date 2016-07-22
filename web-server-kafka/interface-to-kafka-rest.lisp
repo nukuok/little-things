@@ -38,7 +38,18 @@
 
 
 (defun extract-value-in-record (record)
-  (base64-string-to-string (json-assoc "value" (nth 0 (yason:parse record)))))
+  (let ((value (json-assoc "value" (nth 0 (yason:parse record)))))
+    ;; (princ value)
+    (if (string-equal value "AAAA" :start1 0 :end1 4)
+	(aref (base64-string-to-usb8-array (json-assoc "value" (nth 0 (yason:parse record)))) 7)
+	(base64-string-to-string value))))
+
+;; (defun extract-value-in-record2 (record)
+;;   (aref (base64-string-to-usb8-array (json-assoc "value" (nth 0 (yason:parse record)))) 7))
+
+
+(defun extract-from-record (record &optional (keyword "value"))
+  (base64-string-to-string (json-assoc keyword (nth 0 (yason:parse record)))))
 
 (defmacro get-topics ()
   `(common-request (*kafka-rest-ip* ":8082/topics") :get))
@@ -72,7 +83,9 @@
 	       (if (equal record "[]")
 		   result
 		   (iter (append result
-				 (list (list offset (extract-value-in-record record)))) (+ 1 offset))))))
+				 (list (list offset
+					     (extract-from-record record "key")
+					     (extract-value-in-record record)))) (+ 1 offset))))))
     (iter nil ,from-offset)))
 
 

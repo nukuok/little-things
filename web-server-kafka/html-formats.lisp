@@ -6,7 +6,8 @@
 	  (loop for item in result-list collect
 	       (htm (:tr
 		     (htm (:td (str (car item))))
-		     (htm (:td (str (cadr item)))))))))))
+		     (htm (:td (str (cadr item))))
+		     (htm (:td (str (caddr item)))))))))))
 
 
 (defun last-items (result-list &optional (needed-len 20))

@@ -53,7 +53,7 @@
  (:table
   (:tr
    (:td (:textarea :rows 3 :cols 76
-		   :id "topicname" :class "txt" "newtopic")))
+		   :id "topicname" :class "txt" "UserClicks")))
   (:tr
    (str *area1*))))
 
