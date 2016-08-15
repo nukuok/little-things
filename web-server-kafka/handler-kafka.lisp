@@ -45,44 +45,72 @@
 (defvar *area1* nil)
 (setf *area1*
       (with-html-output-to-string (s nil :indent 1)
-	(:td (:div :id "allrecords"))))
+	(:td :style "width:600px" (:div :id "input"))))
 
+(defvar *area2* nil)
+(setf *area2*
+      (with-html-output-to-string (s nil :indent 1)
+	(:td :style "width:200px" (:div :id "output"))))
 
 (push-to-handler-html-body
  *kafka*
  (:table
   (:tr
-   (:td (:textarea :rows 3 :cols 76
-		   :id "topicname" :class "txt" "UserClicks")))
-  (:tr
-   (str *area1*))))
+   (:td (str *area1*))
+   (:td (str *area2*)))))
 
 
 (push-to-handler-html-head
  *kafka* 
  (:script :type "text/javascript"
 	  (str (ps
-		 (defun callback-get-all-records (response)
+		 (defun callback-get-input (response)
 		   ;;(alert response)
 		   (setf (chain document
-				(get-element-by-id "allrecords")
+				(get-element-by-id "input")
 				inner-h-t-m-l) response))
-		 (defun front-get-all-records ()
+		 (defun front-get-input ()
 		   (progn
-		     ;;(alert "front-get-all-records")
+		     ;; (alert "front-get-input")
 		     (chain smackjack (ajax-get-records
-				       (chain document
-					      (get-element-by-id "topicname")
-					      value)
-				       callback-get-all-records))))
-		 (defvar timer-i-d)
-		 (defun set-timer ()
+				       ;; (chain document
+					      ;; (get-element-by-id "topicname")
+				       "streams-file-input"
+					      ;; value)
+				       callback-get-input))))
+		 (defun callback-get-output (response)
+		   ;;(alert response)
+		   (setf (chain document
+				(get-element-by-id "output")
+				inner-h-t-m-l) response))
+		 (defun front-get-output ()
+		   (progn
+		     ;; (alert "front-get-output")
+		     (chain smackjack (ajax-get-records
+				       ;; (chain document
+					      ;; (get-element-by-id "topicname")
+				       "streams-wordcount-output"
+					      ;; value)
+				       callback-get-output))))
+
+		 (defvar timer-i-d-input)
+		 (defun set-timer-input ()
 		   (progn
 		     ;;(alert "set-timer")
-		     (chain (clear-interval timer-i-d))
-		     (setf timer-i-d
+		     (chain (clear-interval timer-i-d-input))
+		     (setf timer-i-d-input
 			   (chain (set-interval
-				   front-get-all-records 500)))))
-		 (set-timer)))))
+				   front-get-input 1000)))))
+		 (set-timer-input)
+
+		 (defvar timer-i-d-output)
+		 (defun set-timer-output ()
+		   (progn
+		     ;;(alert "set-timer")
+		     (chain (clear-interval timer-i-d-output))
+		     (setf timer-i-d-output
+			   (chain (set-interval
+				   front-get-output 1000)))))
+		 (set-timeout (set-timer-output) 1000)))))
 
 

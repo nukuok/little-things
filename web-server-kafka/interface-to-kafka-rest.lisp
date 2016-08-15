@@ -18,6 +18,10 @@
 ;;; Accept: application/vnd.kafka.v1+json, application/vnd.kafka+json, application/json
 
 ;;; common part 
+
+(defun string-in-utf8 (string)
+  (flexi-streams:octets-to-string (flexi-streams:string-to-octets string) :external-format :utf-8))
+
 (defmacro to-scheme (list)
   `(concatenate 'string "http://" ,@list))
 
@@ -37,19 +41,27 @@
     ,output-stream))
 
 
+;; (defun extract-value-in-record (record)
+;;   (let ((value (json-assoc "value" (nth 0 (yason:parse record)))))
+;;     ;; (princ value)
+;;     (if (string-equal value "AAAA" :start1 0 :end1 4)
+;; 	(aref (base64-string-to-usb8-array (json-assoc "value" (nth 0 (yason:parse record)))) 7)
+;; 	(base64-string-to-string value))))
+
 (defun extract-value-in-record (record)
   (let ((value (json-assoc "value" (nth 0 (yason:parse record)))))
     ;; (princ value)
     (if (string-equal value "AAAA" :start1 0 :end1 4)
 	(aref (base64-string-to-usb8-array (json-assoc "value" (nth 0 (yason:parse record)))) 7)
-	(base64-string-to-string value))))
+	(string-in-utf8 (base64-string-to-string value)))))
+
 
 ;; (defun extract-value-in-record2 (record)
 ;;   (aref (base64-string-to-usb8-array (json-assoc "value" (nth 0 (yason:parse record)))) 7))
 
 
 (defun extract-from-record (record &optional (keyword "value"))
-  (base64-string-to-string (json-assoc keyword (nth 0 (yason:parse record)))))
+  (string-in-utf8 (base64-string-to-string (json-assoc keyword (nth 0 (yason:parse record))))))
 
 (defmacro get-topics ()
   `(common-request (*kafka-rest-ip* ":8082/topics") :get))
@@ -78,14 +90,28 @@
 				    "/messages?offset=" (write-to-string ,offset)) :get))
 
 (defmacro get-all-records (topic-name from-offset)
-  `(labels ((iter (result offset)
-	     (let ((record (sequence-to-string (get-record ,topic-name offset))))
-	       (if (equal record "[]")
-		   result
-		   (iter (append result
-				 (list (list offset
-					     (extract-from-record record "key")
-					     (extract-value-in-record record)))) (+ 1 offset))))))
-    (iter nil ,from-offset)))
+  (let ((record (gensym)))
+    `(labels ((iter (result offset)
+		(let ((,record (sequence-to-string (get-record ,topic-name offset))))
+		  (if (equal ,record "[]")
+		      result
+		      (iter (append result
+				    (list (list offset
+						(extract-from-record ,record "key")
+						(extract-value-in-record ,record)))) (+ 1 offset))))))
+       (iter nil ,from-offset))))
 
+;; (defun extract-value-in-record (record)
+;;   (let ((value (json-assoc "value" (nth 0 (yason:parse record)))))
+;;     (if (string-equal value "AAAA" :start1 0 :end1 4)
+;; 	(aref (base64-string-to-usb8-array (json-assoc "value" (nth 0 (yason:parse record)))) 7)
+;; 	(base64-string-to-string value))))
+
+(defun extract-value-in-record (record)
+  (let ((value (json-assoc "value" (nth 0 (yason:parse record)))))
+    (if (string-equal value "AAAA" :start1 0 :end1 4)
+	(aref (base64-string-to-usb8-array (json-assoc "value" (nth 0 (yason:parse record)))) 7)
+	(string-in-utf8 (base64-string-to-string value)))))
+
+(flexi-streams:octets-to-string (flexi-streams:string-to-octets "abc") :external-format :utf-8)
 

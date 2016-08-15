@@ -56,3 +56,19 @@
 
 (defun integer-to-long (num)
   (concatenate 'string (format nil "~64,'0b" num) "00000000"))
+
+(defun generate-review-comments ()
+  (with-open-file (instream "~/Downloads/reviewcomment.txt" :direction :input)
+    (read-line instream)
+    (as:start-event-loop
+     (lambda ()
+       (as:interval
+	(lambda ()
+	  (post-to-topic-raw
+	   "streams-file-input"
+	  ;; (print
+	   (sequence-to-string (flexi-streams:string-to-octets
+				(cadr (string-split (read-line instream) #\tab))
+				:external-format :utf-8))))
+	:time 5)))))
+
